@@ -96,6 +96,8 @@ d3.csv("climate_warming_d3.csv", d3.autoType).then(data => {
         return area(scenarioData);
       });
 
+    svg.selectAll(".range-area").lower();
+    
     svg.selectAll(".scenario-line")
       .data(selectedScenarios, d => d)
       .join(

@@ -38,38 +38,6 @@
 
   <div id="chart"></div>
 
-  <section class="writeup">
-    <h2>Write-up</h2>
-
-    <h3>Design Rationale</h3>
-    <p>
-      We chose a line chart because the main goal is to compare how global temperature
-      changes over time under different climate scenarios. The x-axis represents year,
-      and the y-axis represents warming since 2015. Color separates the scenarios so
-      viewers can compare low-, medium-, and high-emission futures.
-    </p>
-
-    <h3>Data Transformation</h3>
-    <p>
-      The CMIP6 data was processed in Python before being loaded into D3. We calculated
-      global mean temperature, converted the data into annual averages, and measured
-      warming relative to 2015. The cleaned result was exported as a CSV file.
-    </p>
-
-    <h3>Interaction</h3>
-    <p>
-      The checkboxes let users filter scenarios. The year slider lets users focus on
-      shorter or longer time ranges. Tooltips provide exact values when users hover over
-      the points.
-    </p>
-
-    <h3>Development Process</h3>
-    <p>
-      We first explored the climate data in Python, then selected scenario and year as
-      the main variables for comparison. After cleaning the data, we exported it to CSV
-      and built the final interactive visualization using D3.js.
-    </p>
-  </section>
 
   <script src="main.js"></script>
 </body>
