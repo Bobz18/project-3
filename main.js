@@ -26,8 +26,8 @@ d3.csv("climate_warming_d3.csv", d3.autoType).then(data => {
 
   const y = d3.scaleLinear()
     .domain([
-      d3.min(data, d => d.warming),
-      d3.max(data, d => d.warming)
+      d3.min(data, d => d.low), 
+      d3.max(data, d => d.high)
     ])
     .nice()
     .range([height - margin.bottom, margin.top]);
@@ -54,7 +54,7 @@ d3.csv("climate_warming_d3.csv", d3.autoType).then(data => {
 
   const line = d3.line()
     .x(d => x(d.year))
-    .y(d => y(d.warming));
+    .y(d => y(d.mean));
 
   function updateChart() {
     const selectedScenarios = Array.from(
@@ -101,7 +101,7 @@ d3.csv("climate_warming_d3.csv", d3.autoType).then(data => {
               .html(
                 `<strong>${d.scenario.toUpperCase()}</strong><br>
                  Year: ${d.year}<br>
-                 Warming: ${d.warming.toFixed(2)} °C`
+                 Warming: ${d.mean.toFixed(2)} °C`
               );
           })
           .on("mousemove", function(event) {
@@ -116,7 +116,7 @@ d3.csv("climate_warming_d3.csv", d3.autoType).then(data => {
         exit => exit.remove()
       )
       .attr("cx", d => x(d.year))
-      .attr("cy", d => y(d.warming))
+      .attr("cy", d => y(d.mean))
       .attr("fill", d => colors[d.scenario]);
 
     const legend = svg.selectAll(".legend")
