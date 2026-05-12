@@ -9,34 +9,86 @@
 </head>
 
 <body>
-  <h1>How Do Climate Scenarios Change Global Temperature by 2100?</h1>
+  <main class="app-shell">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">CMIP6 Climate Scenarios</p>
+        <h1>Global Temperature Pathways</h1>
+        <p class="lede">
+          Compare historical warming with projected global temperature change across mitigation pathways.
+        </p>
+      </div>
 
-  <p>
-    This interactive D3 visualization compares projected global temperature warming
-    under different CMIP6 climate scenarios.
-  </p>
+      <div class="baseline-pill">
+        <span>Baseline</span>
+        <strong>1850</strong>
+      </div>
+    </header>
 
-  <section class="controls">
-    <label><input type="checkbox" value="ssp126" checked> SSP126</label>
-    <label><input type="checkbox" value="ssp245" checked> SSP245</label>
-    <label><input type="checkbox" value="ssp585" checked> SSP585</label>
-    <br>
+    <section class="dashboard">
+      <section class="controls" aria-label="Chart controls">
+        <div class="control-group">
+          <span class="control-title">Series</span>
+          <label class="check-option">
+            <input type="checkbox" id="historical-toggle" checked>
+            <span class="swatch historical"></span>
+            Historical
+          </label>
+          <label class="check-option">
+            <input type="checkbox" value="ssp126" checked>
+            <span class="swatch ssp126"></span>
+            SSP126
+          </label>
+          <label class="check-option">
+            <input type="checkbox" value="ssp245" checked>
+            <span class="swatch ssp245"></span>
+            SSP245
+          </label>
+          <label class="check-option">
+            <input type="checkbox" value="ssp585" checked>
+            <span class="swatch ssp585"></span>
+            SSP585
+          </label>
+        </div>
 
-    <label>
-        <input type="checkbox" id="range-toggle" checked>
-        Show uncertainty range
-    </label>
-  </section>
+        <div class="control-group">
+          <span class="control-title">Display</span>
+          <label class="check-option">
+            <input type="checkbox" id="range-toggle" checked>
+            Show uncertainty range
+          </label>
 
-  <section class="slider-box">
-    <label>
-      Show years up to:
-      <input type="range" id="year-slider" min="2015" max="2100" value="2100">
-      <span id="year-label">2100</span>
-    </label>
-  </section>
+          <label class="select-control">
+            <span>Temperature unit</span>
+            <select id="temp-unit">
+              <option value="C">Celsius</option>
+              <option value="K">Kelvin</option>
+              <option value="F">Fahrenheit</option>
+            </select>
+          </label>
+        </div>
 
-  <div id="chart"></div>
+        <div class="slider-box control-group">
+          <span class="control-title">Year Window</span>
+          <label>
+            <span>From</span>
+            <input type="range" id="start-year-slider" min="1850" max="2100" value="1850">
+            <strong id="start-year-label">1850</strong>
+          </label>
+
+          <label>
+            <span>To</span>
+            <input type="range" id="year-slider" min="1850" max="2100" value="2100">
+            <strong id="year-label">2100</strong>
+          </label>
+        </div>
+      </section>
+
+      <section class="chart-panel" aria-label="Temperature chart">
+        <div id="chart"></div>
+      </section>
+    </section>
+  </main>
 
 
   <script src="main.js"></script>
