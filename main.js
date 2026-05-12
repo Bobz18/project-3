@@ -26,7 +26,7 @@ d3.csv("climate_warming_d3.csv", d3.autoType).then(data => {
 
   const y = d3.scaleLinear()
     .domain([
-      d3.min(data, d => d.low), 
+      d3.min(data, d => d.low),
       d3.max(data, d => d.high)
     ])
     .nice()
@@ -56,10 +56,17 @@ d3.csv("climate_warming_d3.csv", d3.autoType).then(data => {
     .x(d => x(d.year))
     .y(d => y(d.mean));
 
+  const area = d3.area()
+    .x(d => x(d.year))
+    .y0(d => y(d.low))
+    .y1(d => y(d.high));
+
   function updateChart() {
     const selectedScenarios = Array.from(
-      document.querySelectorAll("input[type='checkbox']:checked")
+      document.querySelectorAll(".controls input[type='checkbox']:not(#range-toggle):checked")
     ).map(d => d.value);
+
+    const showRange = document.querySelector("#range-toggle").checked;
 
     const selectedYear = +document.querySelector("#year-slider").value;
     document.querySelector("#year-label").textContent = selectedYear;
@@ -71,6 +78,23 @@ d3.csv("climate_warming_d3.csv", d3.autoType).then(data => {
 
     x.domain([2015, selectedYear]);
     xAxis.call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+    svg.selectAll(".range-area")
+      .data(showRange ? selectedScenarios : [], d => d)
+      .join(
+        enter => enter.append("path")
+          .attr("class", "range-area"),
+        update => update,
+        exit => exit.remove()
+      )
+      .attr("fill", d => colors[d])
+      .attr("d", scenario => {
+        const scenarioData = filteredData
+          .filter(d => d.scenario === scenario)
+          .sort((a, b) => d3.ascending(a.year, b.year));
+
+        return area(scenarioData);
+      });
 
     svg.selectAll(".scenario-line")
       .data(selectedScenarios, d => d)
@@ -101,7 +125,8 @@ d3.csv("climate_warming_d3.csv", d3.autoType).then(data => {
               .html(
                 `<strong>${d.scenario.toUpperCase()}</strong><br>
                  Year: ${d.year}<br>
-                 Warming: ${d.mean.toFixed(2)} °C`
+                 Mean: ${d.mean.toFixed(2)} °C<br>
+                 Range: ${d.low.toFixed(2)}–${d.high.toFixed(2)} °C`
               );
           })
           .on("mousemove", function(event) {
