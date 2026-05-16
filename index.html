@@ -12,57 +12,91 @@
   <main class="app-shell">
     <header class="page-header">
       <div>
-        <p class="eyebrow">CMIP6 Climate Scenarios</p>
-        <h1>Global Temperature Pathways</h1>
+        <p class="eyebrow"><a href="https://console.cloud.google.com/marketplace/product/noaa-public/cmip6?project=fluid-script-453604-u5">CMIP6</a> Climate Scenarios</p>
+        <h1>Climate Futures:  How Much Warmer Could The Earth Become Under Different Emission Scenarios?</h1>
         <p class="lede">
-          Compare historical warming with projected global temperature change across mitigation pathways.
+          Exploring historical warming and projected climate pathways from 1850 to 2100
         </p>
-      </div>
-
-      <div class="baseline-pill">
-        <span>Baseline</span>
-        <strong>1850</strong>
       </div>
     </header>
 
+    <div class="team-section">
+      <ul class="team-list">
+        <li><strong>Junle Li</strong> — <a>jul187@ucsd.edu</a></li>
+        <li><strong>Eric Mei</strong> — <a>emei@ucsd.edu</a></li>
+        <li><strong>Even Wu</strong> — <a>wew062@ucsd.edu</a></li>
+        <li><strong>Bobby Zhou</strong> — <a>hez018@ucsd.edu</a></li>
+      </ul>
+    </div>
+
     <section class="dashboard">
+
+      <!-- Controls -->
       <section class="controls" aria-label="Chart controls">
+
         <div class="control-group">
-          <span class="control-title">Series</span>
+          <span class="control-title">Simulated Emissions Level</span>
+
           <label class="check-option">
             <input type="checkbox" id="historical-toggle" checked>
             <span class="swatch historical"></span>
             Historical
           </label>
+
           <label class="check-option">
             <input type="checkbox" value="ssp126" checked>
             <span class="swatch ssp126"></span>
-            SSP126
+             Low (SSP1-2.6)
           </label>
+
           <label class="check-option">
-            <input type="checkbox" value="ssp245" checked>
+            <input type="checkbox" value="ssp245" >
             <span class="swatch ssp245"></span>
-            SSP245
+            Medium (SSP2-4.5)
           </label>
+
+          <label class="check-option">
+            <input type="checkbox" value="ssp370" >
+            <span class="swatch ssp370"></span>
+            High (SSP3-7.0)
+          </label>
+
           <label class="check-option">
             <input type="checkbox" value="ssp585" checked>
             <span class="swatch ssp585"></span>
-            SSP585
+            Very High (SSP5-8.5)
           </label>
         </div>
 
         <div class="control-group">
           <span class="control-title">Display</span>
+
           <label class="check-option">
             <input type="checkbox" id="range-toggle" checked>
             Show uncertainty range
           </label>
 
+          <label class="check-option">
+            <input type="checkbox" id="anomaly-toggle">
+            Show anomaly relative to 1850
+          </label>
+
+          <label class="check-option">
+            <input type="checkbox" id="danger-toggle">
+            Show critical warming threshold
+          </label>
+
+
+          <label class="check-option">
+            <input type="checkbox" id="smooth-toggle" checked>
+            Smooth curves
+          </label>
+
           <label class="select-control">
             <span>Temperature unit</span>
             <select id="temp-unit">
-              <option value="C">Celsius</option>
               <option value="K">Kelvin</option>
+              <option value="C">Celsius</option>
               <option value="F">Fahrenheit</option>
             </select>
           </label>
@@ -70,6 +104,7 @@
 
         <div class="slider-box control-group">
           <span class="control-title">Year Window</span>
+
           <label>
             <span>From</span>
             <input type="range" id="start-year-slider" min="1850" max="2100" value="1850">
@@ -82,15 +117,140 @@
             <strong id="year-label">2100</strong>
           </label>
         </div>
+
       </section>
 
+      <!-- Chart -->
       <section class="chart-panel" aria-label="Temperature chart">
-        <div id="chart"></div>
+        <div class="chart-flex">
+          <div id="chart"></div>
+          <div id="legend"></div>
+        </div>
       </section>
+
     </section>
+    <article class="writeup-card">
+      <h3>What is SSP (Shared Socioeconomic Pathways)?</h3>
+      <p>Each SSP scenario has two components:</p>
+      <ul>
+        <li><strong>SSP number (1–5):</strong> the socioeconomic pathway describing how society develops:
+          <ul>
+            <li><strong>SSP1:</strong> Sustainability</li>
+            <li><strong>SSP2:</strong> Middle‑of‑the‑Road</li>
+            <li><strong>SSP3:</strong> Regional Rivalry</li>
+            <li><strong>SSP4:</strong> Inequality</li>
+            <li><strong>SSP5:</strong> Fossil‑Fueled Development</li>
+          </ul>
+        </li>
+
+        <li><strong>Radiative forcing value (e.g., 2.6, 4.5, 7.0, 8.5):</strong> the extra heat (W/m²) Earth absorbs by 2100.</li>
+        <li>For example, SSP2‑4.5 simulates: “A Middle‑of‑the‑Road socioeconomic future that leads to 4.5 W/m² of extra heat trapped by Earth in 2100.</li>
+      </ul>
+
+
+      <h3>About the Uncertainty Range:</h3>
+      <p>The shaded uncertainty range represents the minimum and maximum projected temperatures across different climate models within the same scenario. A wider range indicates greater uncertainty and less agreement between models, while a narrower range suggests the models are more consistent in their projections.</p>
+
+      <h3>About the Critical Warming threshold:</h3>
+      <p>In climate science, the most widely recognized upper boundary for avoiding severe and potentially irreversible impacts is +2 °C of global warming above the pre‑industrial baseline (1850–1900). This threshold is used by the IPCC and the Paris Agreement as a marker separating “high‑risk” climate futures from more manageable ones.</p>
+    
+      <h2>Takeaway</h2>
+      <p>Only SSP1‑2.6, the low‑emissions sustainability pathway, keeps global warming below the 2 °C critical threshold through 2100. All other scenarios exceed this limit—some rapidly and by large margins—highlighting how strongly future temperatures depend on the choices societies make today. The visualization makes clear that avoiding the most dangerous levels of warming is still possible, but only under the most sustainable pathway.</p>
+    </article>
+      
+    
+
+    <article class="writeup-card">
+      <h1>Writeup</h1>
+      <p class="subtitle">Design rationale and development process for our climate visualization.</p>
+
+      <section>
+        <h2>Design Rationale</h2>
+        <p>
+          We designed an interactive visualization conveying what future temperatures would be predicted to be under multiple CMIP6 mitigation scenarios, including SSP126, SSP245, SSP370, and SSP585. The visualization gives clarity, interaction, and comparison to the user so they can better conceptualize global warming trends.
+        </p>
+
+        <h3>Visual Encodings</h3>
+        <p>
+          We used line charts because they are the best at displaying trends over time. On the x-axis, we plotted the year, and on the y-axis, we plotted the temperature anomaly. This makes it easy to compare multiple different scenarios.
+        </p>
+        <p>
+          Different color choices were used for each scenario: black for historical, green for SSP126, blue for SSP245, purple for SSP370, and red for SSP585. The different colors allow viewers to make comparisons across different mitigation scenarios.
+        </p>
+        <p>
+          We included uncertainty ranges as lighter shaded regions around each trend line to convey that there are fluctuations around temperature for each mitigation scenario. Users can toggle this on or off. The circular points for the projection data allow for easy hovering and make it easier to discern values at certain years.
+        </p>
+
+        <h3>Interaction Techniques</h3>
+        <p>
+          We added checkbox toggles to selectively turn on or off different SSP or historical scenarios. This makes the visualization less cluttered and makes it easier to focus on comparisons between different SSP scenarios.
+        </p>
+        <p>
+          The year slider allows users to select a range of years between 1850 and 2100. This allows users to zoom into a specific range of years without overwhelming the screen with all the years at once.
+        </p>
+        <p>
+          The temperature unit toggle allows users to select between Kelvin, Celsius, and Fahrenheit. This increases accessibility and makes the visualization more understandable for people of different regional or scientific backgrounds. Tooltips were implemented so the user can hover over certain points to see the details without overcrowding the graph with labels.
+        </p>
+      </section>
+
+      <section>
+        <h2>Alternative Visualizations Considered</h2>
+        <p>
+          Before deciding on the final interactive dashboard design, we experimented with various graphs and designs to determine which graph best communicates the differences between climate scenarios.
+        </p>
+
+        <h3>Multiple Small Graphs</h3>
+        <p>
+          We considered using multiple small graphs to display temperature trends for each SSP scenario. However, this made direct comparison between the different trends difficult. By overlaying the different trends on one graph, users are better able to see the divergence between different scenarios.
+        </p>
+
+        <h3>Bar Chart</h3>
+        <p>
+          We initially considered using a bar chart for projected temperatures by 2100 across the different SSP scenarios, including SSP126, SSP245, SSP370, and SSP585. The bar chart helped convey the final values at 2100, especially the large increase for SSP585. However, the bar chart conveyed only the endpoint of the projections and failed to show how temperatures evolved over time. Since temperature is a time-series problem, we chose a line chart because it is the most informative at showing long-term trends and divergence between scenarios.
+        </p>
+
+        <h3>Heatmap Visualization</h3>
+        <p>
+          We also experimented with a heatmap showing how temperature changes across decades and climate scenarios using color intensity. The graph highlighted how warming happens over time, but it failed to give enough quantitative information, so users could not easily compare trends year-by-year.
+        </p>
+
+        <h3>Static Multi-Line Graph</h3>
+        <p>
+          We also tried a simpler static line graph visualization for temperature over time across different SSP scenarios. This graph conveyed warming trends, but lacked interactivity and user control. Users could not select SSP scenarios, adjust the time frame, or inspect uncertainty ranges. This motivated us to create a more dashboard-style interactive visualization with user control.
+        </p>
+      </section>
+
+      <section>
+        <h2>Development Process</h2>
+        <p>
+          The project was developed collaboratively by the team through iterative design, coding, and testing. Responsibilities were divided across frontend styling, D3 visualization logic, interaction implementation, debugging, and writing.
+        </p>
+
+        <h3>Team Contributions</h3>
+        <ul>
+          <li>One person focused on building the D3 visualization logic, such as scales, axes, scenario rendering, and uncertainty ranges.</li>
+          <li>Another person focused on interaction features, like toggles, sliders, unit conversion, and tooltips.</li>
+          <li>One person focused on the UI aspect by styling using CSS and refining the layout in order to create a clean-looking dashboard interface.</li>
+          <li>One person focused on the write-up and overview of the development process.</li>
+        </ul>
+
+        <h3>Development Commentary</h3>
+        <p>
+          Overall, we spent approximately <strong>15–20 people-hours</strong> developing the application. The most time-consuming aspects were:
+        </p>
+        <ul>
+          <li>Cleaning and organizing the climate datasets.</li>
+          <li>Synchronizing interactions so all controls could update the visualization at the same time.</li>
+          <li>Updating the year slider while simultaneously toggling scenarios, which required careful state management.</li>
+          <li>Debugging D3 rendering with scales, ranges, and dynamic updates.</li>
+          <li>Balancing visual detail with readability, especially when showing multiple uncertainty ranges at once.</li>
+        </ul>
+        <p>
+          Small adjustments to spacing, transparency, and layout made the visual aspect much better and helped the final dashboard feel cleaner and easier to use.
+        </p>
+      </section>
+    </article>
   </main>
-
-
   <script src="main.js"></script>
 </body>
 </html>

@@ -1,6 +1,8 @@
 const width = 900;
 const height = 520;
-const margin = { top: 40, right: 160, bottom: 60, left: 70 };
+const margin = { top: 40, right: 20, bottom: 60, left: 70 };
+let previousHadHistorical = true;
+
 
 const svg = d3.select("#chart")
   .append("svg")
@@ -10,6 +12,7 @@ const colors = {
   historical: "#222",
   ssp126: "#12843b",
   ssp245: "#2458db",
+  ssp370: "#b86cff",
   ssp585: "#e32f27"
 };
 
@@ -20,82 +23,44 @@ const tooltip = d3.select("body")
 
 function convertTemp(value) {
   const unit = document.getElementById("temp-unit").value;
-
-  if (unit === "C") return value;
   if (unit === "K") return value;
-  if (unit === "F") return value * 9 / 5;
-
+  if (unit === "C") return value - 273.15;
+  if (unit === "F") return (value - 273.15) * 9/5 + 32;
   return value;
 }
 
 function getTempUnitLabel() {
   const unit = document.getElementById("temp-unit").value;
-
   if (unit === "K") return "K";
   if (unit === "F") return "°F";
-
   return "°C";
 }
 
-Promise.all([
-  d3.csv("climate_warming_d3.csv", d3.autoType),
-  d3.csv("global_tas_scenarios.csv", d3.autoType)
-]).then(([data, globalData]) => {
-  const scenarios = ["ssp126", "ssp245", "ssp585"];
-  const legendItems = ["historical", ...scenarios];
-  const baselineYear = d3.min(globalData, d => d.year);
-  const baselineTemp = d3.mean(
-    globalData.filter(d => d.year === baselineYear),
-    d => d.temp
-  );
-  const scenarioOffsets = new Map(
-    scenarios.map(scenario => {
-      const scenarioStartTemp = d3.mean(
-        globalData.filter(d => d.scenario === scenario && d.year === 2015),
-        d => d.temp
-      );
-
-      return [scenario, scenarioStartTemp - baselineTemp];
-    })
+d3.csv("data.csv", d3.autoType).then(data => {
+  const startYear = d3.min(data, d => d.year);
+  const endYear = d3.max(data, d => d.year);
+  const baselineYear = 1850;
+  const baselineMean = d3.mean(
+    data.filter(d => d.scenario === "historical" && d.year === baselineYear),
+    d => d.mean
   );
 
-  const historicalData = globalData
-    .filter(d => d.scenario === "historical")
-    .map(d => ({
-      scenario: d.scenario,
-      year: d.year,
-      mean: d.temp - baselineTemp
-    }))
-    .sort((a, b) => d3.ascending(a.year, b.year));
+  const dangerKelvin = baselineMean + 2; // +2 in Kelvin
 
-  const projectionData = data.map(d => {
-    const offset = scenarioOffsets.get(d.scenario) || 0;
+  const startSlider = document.querySelector("#start-year-slider");
+  const endSlider = document.querySelector("#year-slider");
+  const startLabel = document.querySelector("#start-year-label");
+  const endLabel = document.querySelector("#year-label");
 
-    return {
-      ...d,
-      mean: d.mean + offset,
-      low: d.low + offset,
-      high: d.high + offset
-    };
-  });
-  const projectionStartYear = d3.min(projectionData, d => d.year);
-  const finalYear = d3.max(projectionData, d => d.year);
-
-  const startYearSlider = document.querySelector("#start-year-slider");
-  const endYearSlider = document.querySelector("#year-slider");
-  const startYearLabel = document.querySelector("#start-year-label");
-  const endYearLabel = document.querySelector("#year-label");
+  startSlider.min = startYear;
+  endSlider.min = startYear;
+  startSlider.max = endYear;
+  endSlider.max = endYear;
 
   const x = d3.scaleLinear()
-    .domain([baselineYear, finalYear])
     .range([margin.left, width - margin.right]);
 
   const y = d3.scaleLinear()
-    .domain([
-      d3.min(projectionData, d => d.low),
-      d3.max(projectionData, d => d.high)
-    ])
-    .nice()
     .range([height - margin.bottom, margin.top]);
 
   const xAxis = svg.append("g")
@@ -116,221 +81,281 @@ Promise.all([
     .attr("y", 20)
     .attr("text-anchor", "middle");
 
-  const line = d3.line()
-    .x(d => x(d.year))
-    .y(d => y(convertTemp(d.mean)));
+  let currentFiltered = [];
+  let currentSelected = [];
+  let currentShowRange = true;
+  let currentUnitLabel = getTempUnitLabel();
+  let currentAnomaly = false;
+  let currentSmooth = true;
 
-  const area = d3.area()
-    .x(d => x(d.year))
-    .y0(d => y(convertTemp(d.low)))
-    .y1(d => y(convertTemp(d.high)));
+  function getSelectedScenarios() {
+    const selected = [];
 
-  function updateChart(event) {
-    const tempUnitLabel = getTempUnitLabel();
-
-    const selectedScenarios = Array.from(
-      document.querySelectorAll(".controls input[type='checkbox']:not(#range-toggle):not(#historical-toggle):checked")
-    ).map(d => d.value);
-
-    const showRange = document.querySelector("#range-toggle").checked;
-    const showHistorical = document.querySelector("#historical-toggle").checked;
-
-    const minSelectableYear = showHistorical ? baselineYear : projectionStartYear;
-    startYearSlider.min = minSelectableYear;
-    endYearSlider.min = minSelectableYear;
-
-    let selectedStartYear = +startYearSlider.value;
-    let selectedEndYear = +endYearSlider.value;
-
-    selectedStartYear = Math.max(selectedStartYear, minSelectableYear);
-    selectedEndYear = Math.max(selectedEndYear, minSelectableYear);
-
-    if (selectedStartYear > selectedEndYear) {
-      if (event && event.target.id === "start-year-slider") {
-        selectedEndYear = selectedStartYear;
-      } else {
-        selectedStartYear = selectedEndYear;
-      }
+    // Historical toggle
+    if (document.querySelector("#historical-toggle").checked) {
+      selected.push("historical");
     }
 
-    startYearSlider.value = selectedStartYear;
-    endYearSlider.value = selectedEndYear;
-    startYearLabel.textContent = selectedStartYear;
-    endYearLabel.textContent = selectedEndYear;
+    // Only scenario checkboxes with a value (ssp126, ssp245, ...)
+    document
+      .querySelectorAll('.control-group:first-child input[type="checkbox"][value]')
+      .forEach(cb => {
+        if (cb.checked) selected.push(cb.value);
+      });
 
-    const filteredData = projectionData.filter(d =>
-      selectedScenarios.includes(d.scenario) &&
-      d.year >= selectedStartYear &&
-      d.year <= selectedEndYear
-    );
+    return selected;
+  }
 
-    const filteredHistoricalData = showHistorical
-      ? historicalData.filter(d =>
-          d.year >= selectedStartYear &&
-          d.year <= selectedEndYear
-        )
-      : [];
 
-    const yDomainValues = [
-      ...filteredData.flatMap(d => [convertTemp(d.low), convertTemp(d.high)]),
-      ...filteredHistoricalData.map(d => convertTemp(d.mean))
-    ];
+  function tempMean(d) {
+    if (!currentAnomaly) return convertTemp(d.mean);
+    return convertTemp(d.mean) - convertTemp(baselineMean);
+  }
 
-    const yExtent = d3.extent(yDomainValues);
-    if (Number.isFinite(yExtent[0]) && Number.isFinite(yExtent[1])) {
-      y.domain(yExtent[0] === yExtent[1]
-        ? [yExtent[0] - 1, yExtent[1] + 1]
-        : yExtent
-      ).nice();
-    } else {
-      y.domain([0, 1]);
-    }
+  function tempLow(d) {
+    if (!currentAnomaly) return convertTemp(d.low);
+    return convertTemp(d.low) - convertTemp(baselineMean);
+  }
 
-    x.domain(selectedStartYear === selectedEndYear
-      ? [selectedStartYear - 1, selectedEndYear + 1]
-      : [selectedStartYear, selectedEndYear]
-    );
-    xAxis.call(d3.axisBottom(x).tickFormat(d3.format("d")));
-    yAxis.call(d3.axisLeft(y));
-    yAxisLabel.text(`Temperature Anomaly Relative to ${baselineYear} (${tempUnitLabel})`);
+  function tempHigh(d) {
+    if (!currentAnomaly) return convertTemp(d.high);
+    return convertTemp(d.high) - convertTemp(baselineMean);
+  }
 
-    svg.selectAll(".historical-line")
-      .data(showHistorical ? [filteredHistoricalData] : [])
-      .join("path")
-      .attr("class", "historical-line")
-      .attr("stroke", colors.historical)
-      .attr("d", line);
+  function buildLine() {
+    const l = d3.line()
+      .x(d => x(d.year))
+      .y(d => y(tempMean(d)));
+    if (currentSmooth) l.curve(d3.curveCatmullRom.alpha(0.9));
+    return l;
+  }
 
-    svg.selectAll(".historical-point")
-      .data(filteredHistoricalData, d => d.year)
-      .join(
-        enter => enter.append("circle")
-          .attr("class", "historical-point")
-          .attr("r", 5)
-          .on("mouseover", function(event, d) {
-            const currentUnitLabel = getTempUnitLabel();
+  function buildArea() {
+    const a = d3.area()
+      .x(d => x(d.year))
+      .y0(d => y(tempLow(d)))
+      .y1(d => y(tempHigh(d)));
+    if (currentSmooth) a.curve(d3.curveCatmullRom.alpha(0.5));
+    return a;
+  }
 
-            tooltip
-              .style("display", "block")
-              .html(
-                `Year: ${d.year}<br>
-                 Temp: ${convertTemp(d.mean).toFixed(2)} ${currentUnitLabel}`
-              );
-          })
-          .on("mousemove", function(event) {
-            tooltip
-              .style("left", event.pageX + 12 + "px")
-              .style("top", event.pageY - 20 + "px");
-          })
-          .on("mouseout", function() {
-            tooltip.style("display", "none");
-          }),
-        update => update,
-        exit => exit.remove()
-      )
-      .attr("cx", d => x(d.year))
-      .attr("cy", d => y(convertTemp(d.mean)));
+  function highlightScenario(scenario) {
+    svg.selectAll(".scenario-line, .range-area, .hover-target")
+      .classed("faded", function() {
+        const sc = this.getAttribute("data-scenario");
+        return sc && sc !== scenario;
+      });
+  }
 
+  function resetHighlight() {
+    svg.selectAll(".scenario-line, .range-area, .hover-target")
+      .classed("faded", false);
+  }
+
+  function drawChart() {
+    if (!currentFiltered.length) return;
+
+    const line = buildLine();
+    const area = buildArea();
+    const byScenario = d3.group(currentFiltered, d => d.scenario);
+
+    // --- RANGE AREAS ---
     svg.selectAll(".range-area")
-      .data(showRange ? selectedScenarios : [], d => d)
+      .data(currentShowRange ? currentSelected : [], d => d)
       .join(
         enter => enter.append("path")
-          .attr("class", "range-area"),
+          .attr("class", "range-area")
+          .attr("data-scenario", d => d),
         update => update,
         exit => exit.remove()
       )
-      .attr("fill", d => colors[d])
-      .attr("d", scenario => {
-        const scenarioData = filteredData
-          .filter(d => d.scenario === scenario)
-          .sort((a, b) => d3.ascending(a.year, b.year));
-
-        return area(scenarioData);
+      .attr("fill", s => colors[s])
+      .attr("stroke", s => colors[s])
+      .attr("stroke-width", 0.4)
+      .attr("d", s => {
+        const rows = (byScenario.get(s) || []).slice()
+          .sort((a, b) => a.year - b.year);
+        return rows.length ? area(rows) : null;
       });
 
-    svg.selectAll(".range-area").lower();
-    
-    svg.selectAll(".scenario-line")
-      .data(selectedScenarios, d => d)
+    // --- LINES ---
+    const lineSel = svg.selectAll(".scenario-line")
+      .data(currentSelected, d => d)
       .join(
         enter => enter.append("path")
-          .attr("class", "scenario-line"),
+          .attr("class", "scenario-line")
+          .attr("data-scenario", d => d),
         update => update,
         exit => exit.remove()
-      )
-      .attr("stroke", d => colors[d])
-      .attr("d", scenario => {
-        const scenarioData = filteredData
-          .filter(d => d.scenario === scenario)
-          .sort((a, b) => d3.ascending(a.year, b.year));
-
-        return line(scenarioData);
-      });
-
-    svg.selectAll(".point")
-      .data(filteredData, d => d.scenario + "-" + d.year)
-      .join(
-        enter => enter.append("circle")
-          .attr("class", "point")
-          .attr("r", 4)
-          .on("mouseover", function(event, d) {
-            const currentUnitLabel = getTempUnitLabel();
-
-            tooltip
-              .style("display", "block")
-              .html(
-                `<strong>${d.scenario.toUpperCase()}</strong><br>
-                 Year: ${d.year}<br>
-                 Mean: ${convertTemp(d.mean).toFixed(2)} ${currentUnitLabel}<br>
-                 Range: ${convertTemp(d.low).toFixed(2)}–${convertTemp(d.high).toFixed(2)} ${currentUnitLabel}`
-              );
-          })
-          .on("mousemove", function(event) {
-            tooltip
-              .style("left", event.pageX + 12 + "px")
-              .style("top", event.pageY - 20 + "px");
-          })
-          .on("mouseout", function() {
-            tooltip.style("display", "none");
-          }),
-        update => update,
-        exit => exit.remove()
-      )
-      .attr("cx", d => x(d.year))
-      .attr("cy", d => y(convertTemp(d.mean)))
-      .attr("fill", d => colors[d.scenario]);
-
-    const legend = svg.selectAll(".legend")
-      .data(legendItems.filter(d => d !== "historical" || showHistorical))
-      .join("g")
-      .attr("class", "legend")
-      .attr("transform", (d, i) =>
-        `translate(${width - margin.right + 30}, ${margin.top + i * 25})`
       );
 
-    legend.selectAll("rect")
-      .data(d => [d])
-      .join("rect")
-      .attr("width", 14)
-      .attr("height", 14)
-      .attr("fill", d => colors[d]);
+    lineSel
+      .attr("stroke", s => colors[s])
+      .attr("stroke-width", 3)
+      .attr("d", s => {
+        const rows = (byScenario.get(s) || []).slice()
+          .sort((a, b) => a.year - b.year);
+        return rows.length ? line(rows) : null;
+      });
 
-    legend.selectAll("text")
-      .data(d => [d])
-      .join("text")
-      .attr("x", 22)
-      .attr("y", 12)
-      .text(d => d === "historical" ? "Historical" : d.toUpperCase());
+    lineSel
+      .on("mouseover", (event, s) => highlightScenario(s))
+      .on("mouseout", resetHighlight);
+
+    svg.selectAll(".range-area")
+      .on("mouseover", (event, s) => highlightScenario(s))
+      .on("mouseout", resetHighlight);
+
+    // --- HOVER TARGETS ---
+    svg.selectAll(".hover-target")
+      .data(currentFiltered, d => d.scenario + "-" + d.year)
+      .join(
+        enter => enter.append("circle")
+          .attr("class", "hover-target")
+          .attr("data-scenario", d => d.scenario)
+          .attr("r", 12),
+        update => update,
+        exit => exit.remove()
+      )
+      .attr("cx", d => x(d.year))
+      .attr("cy", d => y(tempMean(d)))
+      .on("mouseover", function(event, d) {
+        highlightScenario(d.scenario);
+        tooltip
+          .style("display", "block")
+          .html(
+            `<strong>${d.scenario.toUpperCase()}</strong><br>
+            Year: ${d.year}<br>
+            Mean: ${tempMean(d).toFixed(2)} ${currentUnitLabel}<br>
+            Range: ${tempLow(d).toFixed(2)}–${tempHigh(d).toFixed(2)} ${currentUnitLabel}`
+          );
+      })
+      .on("mousemove", function(event) {
+        tooltip
+          .style("left", (event.pageX + 12) + "px")
+          .style("top", (event.pageY - 20) + "px");
+      })
+      .on("mouseout", function() {
+        tooltip.style("display", "none");
+        resetHighlight();
+      });
+
+    // ============================================================
+    // DANGER LINE (+2°C ABOVE 1850 BASELINE)
+    // ============================================================
+
+    // Compute danger line value in the correct unit + anomaly mode
+    function dangerValue() {
+      if (!currentAnomaly) {
+        return convertTemp(dangerKelvin);
+      }
+      return convertTemp(dangerKelvin) - convertTemp(baselineMean);
+    }
+
+    const showDanger = document.querySelector("#danger-toggle").checked;
+
+    svg.selectAll(".danger-line")
+      .data(showDanger ? [1] : [])  // dummy value, we compute y ourselves
+      .join(
+        enter => enter.append("line").attr("class", "danger-line"),
+        update => update,
+        exit => exit.remove()
+      )
+      .attr("x1", margin.left)
+      .attr("x2", width - margin.right)
+      .attr("y1", () => y(dangerValue()))
+      .attr("y2", () => y(dangerValue()));
+  }
+
+
+  function drawLegend() {
+    const legend = d3.select("#legend");
+    legend.selectAll("*").remove();
+
+    currentSelected.forEach(s => {
+      const row = legend.append("div")
+        .attr("class", "legend-row")
+        .attr("data-scenario", s);
+
+      row.append("span")
+        .attr("class", "legend-swatch")
+        .style("background", colors[s]);
+
+      row.append("span")
+        .attr("class", "legend-label")
+        .text(s.toUpperCase());
+    });
+  }
+
+  function updateChart() {
+    currentSelected = getSelectedScenarios();
+    currentShowRange = document.querySelector("#range-toggle").checked;
+    currentAnomaly = document.querySelector("#anomaly-toggle").checked;
+    currentSmooth = document.querySelector("#smooth-toggle").checked;
+    currentUnitLabel = getTempUnitLabel();
+
+    const earliestSelectedYear = d3.min(
+      data.filter(d => currentSelected.includes(d.scenario)),
+      d => d.year
+    );
+
+    startSlider.min = earliestSelectedYear;
+    endSlider.min = earliestSelectedYear;
+
+    // Detect if historical was just re-enabled
+    const historicalJustEnabled =
+      !previousHadHistorical && currentSelected.includes("historical");
+
+    // Update memory
+    previousHadHistorical = currentSelected.includes("historical");
+
+    // Only reset when historical is newly selected
+    if (historicalJustEnabled) {
+      startSlider.value = earliestSelectedYear;
+      endSlider.value = endSlider.max;
+    }
+
+    let sYear = Math.max(+startSlider.value, earliestSelectedYear);
+    let eYear = Math.max(+endSlider.value, earliestSelectedYear);
+
+    if (sYear > eYear) [sYear, eYear] = [eYear, sYear];
+
+    startLabel.textContent = sYear;
+    endLabel.textContent = eYear;
+
+    x.domain([sYear, eYear]);
+
+    currentFiltered = data.filter(d =>
+      currentSelected.includes(d.scenario) &&
+      d.year >= sYear &&
+      d.year <= eYear
+    );
+
+    if (!currentFiltered.length) return;
+
+    const yVals = currentFiltered.flatMap(d => [tempLow(d), tempHigh(d)]);
+    y.domain(d3.extent(yVals)).nice();
+
+    xAxis.call(d3.axisBottom(x).tickFormat(d3.format("d")));
+    yAxis.call(d3.axisLeft(y));
+
+    yAxisLabel.text(
+      currentAnomaly
+        ? `Temperature anomaly relative to ${baselineYear} (${currentUnitLabel})`
+        : `Global  Mean  Temperature (${currentUnitLabel})`
+    );
+
+    drawChart();
+    drawLegend();
   }
 
   document.querySelectorAll("input[type='checkbox']")
-    .forEach(input => input.addEventListener("change", updateChart));
+    .forEach(cb => cb.addEventListener("change", updateChart));
 
-  startYearSlider.addEventListener("input", updateChart);
-  endYearSlider.addEventListener("input", updateChart);
-
-  document.querySelector("#temp-unit")
-    .addEventListener("change", updateChart);
+  startSlider.addEventListener("input", updateChart);
+  endSlider.addEventListener("input", updateChart);
+  document.querySelector("#temp-unit").addEventListener("change", updateChart);
+  document.querySelector("#danger-toggle").addEventListener("change", updateChart);
 
   updateChart();
 });
